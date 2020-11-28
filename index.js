@@ -191,30 +191,36 @@ async function wakeVehicle() {
 
   console.log('Waking car')
   const wakeResponse = await teslaRequest('POST', '/wake_up')
-
-  console.log('Wake command response:' + await wakeResponse.text())
+  const wakeResponseJSON = await wakeResponse.json()
 
   let vehicleAwake = false
+
+  if (wakeResponse.status == 200 && wakeResponseJSON.response.state === 'online') {
+    console.log('Car already awake, skipping polling')
+    vehicleAwake = true
+  }
+
   let loopCount = 1
 
   while (vehicleAwake === false) {
     console.log('Checking for awake. Try: ' + loopCount)
 
-    if (loopCount > 10) {
-      throw 'Timed out waiting for car to wake up.'
+    if (loopCount > 30) {
+      throw 'Timed out waiting for car to wake up (30s).'
     }
 
     const stateResponse = await teslaRequest('GET', '/vehicle_data', null, true)
     const stateResponseJSON = await stateResponse.json()
 
-    console.log('Current state: ' + stateResponseJSON.response.state)
+    const currentState = stateResponseJSON.response ? stateResponseJSON.response.state : 'unknown'
+    console.log('Current state: ' + currentState)
 
-    if (stateResponseJSON.response.state === 'online') {
+    if (wakeResponse.status === 200 && currentState === 'online') {
       vehicleAwake = true
     } else {
-      console.log('Sleeping')
+      console.log('Car is sleeping, trying again in 1s')
       loopCount += 1
-      await new Promise(r => setTimeout(r, 500));
+      await new Promise(r => setTimeout(r, 1000));
     }
   }
 }
