@@ -12,16 +12,21 @@ async function handleRequest(request) {
   const token = searchParams.get('token')
 
   if (token === TOKEN) {
-    await getVehicleIDFromVin()
-    await wakeVehicle()
-    await startHVAC()
-    await setTemperature(TEMPERATURE)
 
-    // Enable driver/passenger seat warmers
-    await setSeatHeater(0, 3)
-    await setSeatHeater(1, 3)
+    try {
+      await getVehicleIDFromVin()
+      await wakeVehicle()
+      await startHVAC()
+      await setTemperature(TEMPERATURE)
 
-    return jsonResponse('Car is preconditioning to ' + TEMPERATURE + 'C, and the front seats have been turned on.')
+      // Enable driver/passenger seat warmers
+      await setSeatHeater(0, 3)
+      await setSeatHeater(1, 3)
+
+      return jsonResponse('Car is preconditioning to ' + TEMPERATURE + 'C, and the front seats have been turned on.')
+    } catch (errorMessage) {
+      return jsonResponse("Error: " + errorMessage)
+    }
   } else {
     return jsonResponse('Token is invalid')
   }
@@ -205,8 +210,8 @@ async function wakeVehicle() {
   while (vehicleAwake === false) {
     console.log('Checking for awake. Try: ' + loopCount)
 
-    if (loopCount > 30) {
-      throw 'Timed out waiting for car to wake up (30s).'
+    if (loopCount > 60) {
+      throw 'Timed out waiting for car to wake up (60s).'
     }
 
     const stateResponse = await teslaRequest('GET', '/vehicle_data', null, true)
