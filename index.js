@@ -19,9 +19,12 @@ async function handleRequest(request) {
       await startHVAC()
       await setTemperature(TEMPERATURE)
 
-      // Enable driver/passenger seat warmers
+      // Enable seat heaters
       await setSeatHeater(0, 3)
       await setSeatHeater(1, 3)
+      await setSeatHeater(2, 3)
+      await setSeatHeater(4, 3)
+      await setSeatHeater(5, 3)
 
       return jsonResponse('Car is preconditioning to ' + TEMPERATURE + 'C, and the front seats have been turned on.')
     } catch (errorMessage) {
