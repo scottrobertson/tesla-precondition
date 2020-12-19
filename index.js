@@ -224,6 +224,8 @@ async function wakeVehicle() {
     console.log('Current state: ' + currentState)
 
     if (wakeResponse.status === 200 && currentState === 'online') {
+      // Wait a bit more, as sometime there are race conditions with calling a command just after waking the car.
+      await new Promise(r => setTimeout(r, 1000));
       vehicleAwake = true
     } else {
       console.log('Car is sleeping, trying again in 1s')
