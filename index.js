@@ -3,7 +3,7 @@ addEventListener('fetch', event => {
 })
 
 /**
- * Respond with hello worker text
+ * Main API Endpoint. Waits for car to wake up, and then sets the temprature and starts HVAC.
  * @param {Request} request
  */
 async function handleRequest(request) {
