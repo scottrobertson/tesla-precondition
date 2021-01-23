@@ -1,4 +1,4 @@
-# Tesla Precondition Script
+# Tesla Precondition
 
 An API endpoint to preheat your Tesla. You can create a shortcut on your mobile device (such as iOS Shortcuts, or Tasker) to call this endpoint to precondition/preheat your car.
 
