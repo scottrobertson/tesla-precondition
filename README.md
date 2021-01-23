@@ -29,6 +29,7 @@ cp wrangler.toml.example wrangler.toml
 - Publish to Cloudflare:
 
 ```bash
+wrangler login # You only need to do this once
 wrangler publish
 ```
 
