@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "tesla-precondition",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Precondition your Tesla by hitting this URL",
   "main": "index.js",
   "scripts": {
