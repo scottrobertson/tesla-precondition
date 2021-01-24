@@ -51,11 +51,11 @@ The page may take a while to load, as it waits for your Tesla to wake up.
 
 ## Query params
 
-| name | required? | description |
-----------------------------------
-| token | yes | The unique token you set in Cloudflare |
-| temp | no | Desired temperature in Celsius |
-| seats | no | Seat heater settings, comma-separated starting, with driver seat |
+| name  | required? | description                                                      |
+| ----- | --------- | ---------------------------------------------------------------- |
+| token | yes       | The unique token you set in Cloudflare                           |
+| temp  | no        | Desired temperature in Celsius                                   |
+| seats | no        | Seat heater settings, comma-separated starting, with driver seat |
 
 ## Examples
 
