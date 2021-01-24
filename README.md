@@ -55,7 +55,20 @@ The page may take a while to load, as it waits for your Tesla to wake up.
 | ----- | --------- | ---------------------------------------------------------------- |
 | token | yes       | The unique token you set in Cloudflare                           |
 | temp  | no        | Desired temperature in Celsius                                   |
-| seats | no        | Seat heater settings. Comma-separated, starting with driver seat |
+| seats | no        | Comma-separated heat levels (0-3) for each seat. See below       |
+
+#### Seat Numbers
+
+```
+0 Driver
+1 Passenger
+2 Rear left
+3 NOT USED
+4 Rear center
+5 Rear right
+```
+
+An example to turn on all seats to max: `?seats=3,3,3,3,3`
 
 ## Examples
 
