@@ -68,7 +68,7 @@ The page may take a while to load, as it waits for your Tesla to wake up.
 5 Rear right
 ```
 
-An example to turn on all seats to max: `?seats=3,3,3,3,3`
+An example to turn on all seats to max: `?seats=3,3,3,0,3,3`
 
 ## Examples
 
