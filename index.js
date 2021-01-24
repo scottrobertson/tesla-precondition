@@ -9,22 +9,32 @@ addEventListener('fetch', event => {
 async function handleRequest(request) {
   const { searchParams } = new URL(request.url)
   const token = searchParams.get('token')
+  const temperature = searchParams.get('temp')
+  const seats = searchParams.get('seats')
+  let successMessage = 'Car is preconditioning'
 
   if (token === TOKEN) {
     try {
       await getVehicleIDFromVin()
       await wakeVehicle()
       await startHVAC()
-      await setTemperature(TEMPERATURE)
+
+      if (temperature) {
+        await setTemperature(temperature)
+        successMessage += ` to ${temperature}C`
+      }
 
       // Enable seat heaters
-      await setSeatHeater(0, 3)
-      await setSeatHeater(1, 3)
-      await setSeatHeater(2, 3)
-      await setSeatHeater(4, 3)
-      await setSeatHeater(5, 3)
+      if (seats) {
+        await Promise.all(
+          seats.split(',').map(async (seatLevel, seatNumber) => {
+            await setSeatHeater(seatNumber, seatLevel)
+          })
+        )
+        successMessage += ', and the seats have been turned on'
+      }
 
-      return jsonResponse('Car is preconditioning to ' + TEMPERATURE + 'C, and the front seats have been turned on.')
+      return jsonResponse(successMessage)
     } catch (errorMessage) {
       return jsonResponse('Error: ' + errorMessage)
     }
