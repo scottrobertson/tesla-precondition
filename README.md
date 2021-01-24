@@ -55,7 +55,7 @@ The page may take a while to load, as it waits for your Tesla to wake up.
 | ----- | --------- | ---------------------------------------------------------------- |
 | token | yes       | The unique token you set in Cloudflare                           |
 | temp  | no        | Desired temperature in Celsius                                   |
-| seats | no        | Seat heater settings, comma-separated starting, with driver seat |
+| seats | no        | Seat heater settings. Comma-separated, starting with driver seat |
 
 ## Examples
 
