@@ -42,11 +42,34 @@ Next, you need to configure your Tesla login details over in the Cloudflare Dash
 - Click "Edit Variables" under "Environment Variables"
 - Add `TESLA_EMAIL` and `TESLA_PASSWORD` and `VIN`
 - Add a random string to `TOKEN` - this will be used to protect your API endpoint from random people using it.
-- You can also set `TEMPERATURE` here too (in celsius)
 
-This should now be setup. You can test that it's all working by going to the URL given previously, appended with ?token=YOUR_TOKEN.
+This should now be setup. You can test that it's all working by going to the URL given previously, appended with `?token=YOUR_TOKEN`.
+
+By default, the script will wake up your Tesla and turn climate on. You can also specify the temperature (in Celsius) by adding a `temp` query argument and turn the seats on with `seats`.
 
 The page may take a while to load, as it waits for your Tesla to wake up.
+
+## Query params
+
+| name  | required? | description                                                      |
+| ----- | --------- | ---------------------------------------------------------------- |
+| token | yes       | The unique token you set in Cloudflare                           |
+| temp  | no        | Desired temperature in Celsius                                   |
+| seats | no        | Seat heater settings. Comma-separated, starting with driver seat |
+
+## Examples
+
+The bare minimum. Just turn on climate.
+
+```
+https://tesla-precondition.your-subdomain.workers.dev?token=YOUR_TOKEN
+```
+
+Specify a temperature and turn on the two front seats (driver at level 3, passenger at level 1)
+
+```
+https://tesla-precondition.your-subdomain.workers.dev?token=YOUR_TOKEN&temp=20&seats=3,1
+```
 
 ## Setup iOS Shortcut
 
