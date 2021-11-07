@@ -133,7 +133,7 @@ async function wakeVehicle(accessToken, vehicleID) {
   }
 }
 
-async function teslaRequest(accessToken, vehicleID, method, url, body = null, allowFailure = false) {
+async function teslaRequest(accessToken, vehicleID, method, url, body = null) {
   if (accessToken === null) {
     throw 'No access token provided'
   }
@@ -168,9 +168,9 @@ async function teslaRequest(accessToken, vehicleID, method, url, body = null, al
     throw 'Access Token invalid'
   }
 
-  if (allowFailure || response.status === 200) {
+  if (response.status === 200) {
     return response
   } else {
-    throw `Invalid response from ${fullUrl}: ` + (await response.text())
+    throw `Invalid response from ${fullUrl}: [${response.status}] ` + (await response.text())
   }
 }
