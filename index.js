@@ -8,38 +8,36 @@ addEventListener('fetch', event => {
  */
 async function handleRequest(request) {
   const { searchParams } = new URL(request.url)
-  const token = searchParams.get('token')
+  const accessToken = searchParams.get('access_token')
+  const vin = searchParams.get('vin')
   const temperature = searchParams.get('temp')
   const seats = searchParams.get('seats')
   let successMessage = 'Car is preconditioning'
 
-  if (token === TOKEN) {
-    try {
-      await getVehicleIDFromVin()
-      await wakeVehicle()
-      await startHVAC()
+  try {
+    const vehicleID = await getVehicleIDFromVin(accessToken, vin)
 
-      if (temperature) {
-        await setTemperature(temperature)
-        successMessage += ` to ${temperature}C`
-      }
+    await wakeVehicle(accessToken, vehicleID)
+    await startHVAC(accessToken, vehicleID)
 
-      // Enable seat heaters
-      if (seats) {
-        await Promise.all(
-          seats.split(',').map(async (seatLevel, seatNumber) => {
-            await setSeatHeater(seatNumber, seatLevel)
-          })
-        )
-        successMessage += ', and the seats have been turned on'
-      }
-
-      return jsonResponse(successMessage)
-    } catch (errorMessage) {
-      return jsonResponse('Error: ' + errorMessage)
+    if (temperature) {
+      await setTemperature(accessToken, vehicleID, temperature)
+      successMessage += ` to ${temperature}C`
     }
-  } else {
-    return jsonResponse('Token is invalid')
+
+    // Enable seat heaters
+    if (seats) {
+      await Promise.all(
+        seats.split(',').map(async (seatLevel, seatNumber) => {
+          await setSeatHeater(accessToken, vehicleID, seatNumber, seatLevel)
+        }),
+      )
+      successMessage += ', and the seats have been turned on'
+    }
+
+    return jsonResponse(successMessage)
+  } catch (errorMessage) {
+    return jsonResponse('Error: ' + errorMessage)
   }
 }
 
@@ -49,141 +47,31 @@ async function jsonResponse(message) {
   })
 }
 
-async function teslaHeaders() {
-  let accessToken = await TESLA.get('access-token')
+async function getVehicleIDFromVin(accessToken, vin) {
+  console.log('Getting vehicle list')
 
-  if (accessToken === null) {
-    let refreshToken = await TESLA.get('refresh-token')
-    if (refreshToken === null && TESLA_EMAIL) {
-      accessToken = await accessTokenFromEmailPassword()
-    } else {
-      accessToken = await accessTokenFromRefreshToken()
-    }
-  }
+  const vehiclesResponse = await teslaRequest(accessToken, null, 'GET', '/vehicles')
+  const vehiclesJSON = await vehiclesResponse.json()
+  const vehicleID = vehiclesJSON.response.find(vehicle => vehicle.vin === vin).id_s
 
-  if (accessToken === null) {
-    throw 'No access token found'
-  }
-
-  const headers = new Headers()
-  headers.set('Authorization', 'Bearer ' + accessToken)
-
-  return headers
-}
-
-async function accessTokenFromEmailPassword() {
-  headers = new Headers()
-  headers.set('Content-Type', 'application/json')
-
-  if (!TESLA_EMAIL || !TESLA_PASSWORD) {
-    throw 'Tesla email and password must be set'
-  }
-
-  console.log('Getting access token')
-  const request = new Request('https://owner-api.teslamotors.com/oauth/token', {
-    method: 'POST',
-    headers: headers,
-    body: JSON.stringify({
-      grant_type: 'password',
-      client_id: CLIENT_ID,
-      client_secret: SECRET,
-      email: TESLA_EMAIL,
-      password: TESLA_PASSWORD,
-    }),
-  })
-
-  const accessTokenResponse = await fetch(request)
-  const accessTokenJSON = await accessTokenResponse.json()
-
-  await storeAccessToken(accessTokenJSON)
-
-  return accessTokenJSON.access_token
-}
-
-async function accessTokenFromRefreshToken() {
-  headers = new Headers()
-  headers.set('Content-Type', 'application/json')
-
-  let refreshToken = await TESLA.get('refresh-token')
-  if (refreshToken === null) {
-    throw 'No refresh token found'
-  }
-
-  console.log('Refreshing token')
-  const request = new Request('https://owner-api.teslamotors.com/oauth/token', {
-    method: 'POST',
-    headers: headers,
-    body: JSON.stringify({
-      grant_type: 'refresh_token',
-      client_id: CLIENT_ID,
-      client_secret: SECRET,
-      refresh_token: refreshToken,
-    }),
-  })
-
-  const accessTokenResponse = await fetch(request)
-  const accessTokenJSON = await accessTokenResponse.json()
-
-  await storeAccessToken(accessTokenJSON)
-
-  return accessTokenJSON.access_token
-}
-
-async function storeAccessToken(accessTokenJSON) {
-  if (accessTokenJSON.access_token) {
-    console.log('Storing access token')
-    await TESLA.put('access-token', accessTokenJSON.access_token)
-    await TESLA.put('refresh-token', accessTokenJSON.refresh_token)
-    return accessTokenJSON.access_token
+  if (vehicleID) {
+    return vehicleID
   } else {
-    console.log('Could not refresh access token', accessTokenJSON)
-    await TESLA.delete('refresh-token')
-    throw 'Could not refresh access token'
+    throw 'Cannot find vehicle with that VIN'
   }
 }
 
-async function getVehicleIDFromVin() {
-  const storedVehicleID = await TESLA.get('vehicle-id')
-
-  if (storedVehicleID) {
-    return storedVehicleID
-  } else {
-    console.log('Getting vehicle list')
-    headers = await teslaHeaders()
-    const request = new Request('https://owner-api.teslamotors.com/api/1/vehicles', {
-      method: 'GET',
-      headers: headers,
-    })
-
-    const vehiclesResponse = await fetch(request)
-    const vehiclesJSON = await vehiclesResponse.json()
-    const vehicleID = vehiclesJSON.response.find(vehicle => vehicle.vin === VIN).id_s
-
-    if (vehicleID) {
-      await TESLA.put('vehicle-id', vehicleID)
-      return vehicleID
-    } else {
-      throw 'Cannot find vehicle with that VIN'
-    }
-  }
-}
-
-async function startHVAC() {
-  headers = await teslaHeaders()
-
+async function startHVAC(accessToken, vehicleID) {
   console.log('Starting HVAC')
-  const hvacResponse = await teslaRequest('POST', '/command/auto_conditioning_start')
+  const hvacResponse = await teslaRequest(accessToken, vehicleID, 'POST', '/command/auto_conditioning_start')
 
   console.log('HVAC command response:' + (await hvacResponse.text()))
   return hvacResponse
 }
 
-async function setTemperature(temperature) {
-  headers = await teslaHeaders()
-  headers.set('Content-Type', 'application/json')
-
+async function setTemperature(accessToken, vehicleID, temperature) {
   console.log('Setting Temperature')
-  const setTemps = await teslaRequest('POST', '/command/set_temps', {
+  const setTemps = await teslaRequest(accessToken, vehicleID, 'POST', '/command/set_temps', {
     driver_temp: temperature,
     passenger_temp: temperature,
   })
@@ -192,8 +80,8 @@ async function setTemperature(temperature) {
   return setTemps
 }
 
-async function setSeatHeater(seatNumber, seatLevel) {
-  const setSeatHeater = await teslaRequest('POST', '/command/remote_seat_heater_request', {
+async function setSeatHeater(accessToken, vehicleID, seatNumber, seatLevel) {
+  const setSeatHeater = await teslaRequest(accessToken, vehicleID, 'POST', '/command/remote_seat_heater_request', {
     heater: seatNumber,
     level: seatLevel,
   })
@@ -202,11 +90,9 @@ async function setSeatHeater(seatNumber, seatLevel) {
   return setSeatHeater
 }
 
-async function wakeVehicle() {
-  headers = await teslaHeaders()
-
+async function wakeVehicle(accessToken, vehicleID) {
   console.log('Waking car')
-  const wakeResponse = await teslaRequest('POST', '/wake_up')
+  const wakeResponse = await teslaRequest(accessToken, vehicleID, 'POST', '/wake_up')
   const wakeResponseJSON = await wakeResponse.json()
 
   let vehicleAwake = false
@@ -225,7 +111,7 @@ async function wakeVehicle() {
       throw 'Timed out waiting for car to wake up (60s).'
     }
 
-    const stateResponse = await teslaRequest('GET', '/vehicle_data', null, true)
+    const stateResponse = await teslaRequest(accessToken, vehicleID, 'GET', '/vehicle_data', null, true)
     const stateResponseJSON = await stateResponse.json()
 
     const currentState = stateResponseJSON.response ? stateResponseJSON.response.state : 'unknown'
@@ -243,23 +129,27 @@ async function wakeVehicle() {
   }
 }
 
-async function teslaRequest(method, url, body = null, allowFailure = false) {
-  headers = await teslaHeaders()
+async function teslaRequest(accessToken, vehicleID, method, url, body = null, allowFailure = false) {
+  if (accessToken === null) {
+    throw 'No access token provided'
+  }
+
+  const headers = new Headers()
+  headers.set('Authorization', 'Bearer ' + accessToken)
 
   if (body !== null) {
     headers.set('Content-Type', 'application/json')
     body = JSON.stringify(body)
   }
 
-  const vehicleID = await TESLA.get('vehicle-id')
-
-  if (!vehicleID) {
-    throw 'No vehicle ID found, did you set a VIN?'
+  let fullUrl = null
+  if (vehicleID === null && url === '/vehicles') {
+    fullUrl = 'https://owner-api.teslamotors.com/api/1/vehicles/'
+  } else {
+    fullUrl = 'https://owner-api.teslamotors.com/api/1/vehicles/' + vehicleID + url
   }
 
-  const fullUrl = 'https://owner-api.teslamotors.com/api/1/vehicles/' + vehicleID + url
   console.log('Calling: ' + method + ' ' + fullUrl + ' with body: ' + body)
-
   const request = new Request(fullUrl, {
     method: method,
     headers: headers,
@@ -270,25 +160,13 @@ async function teslaRequest(method, url, body = null, allowFailure = false) {
 
   console.log('Response status:', response.status)
 
-  if (response.status === 404) {
-    console.log('Returning 404, clearing out the vehicle-id as they can change sometime')
-    await TESLA.delete('vehicle-id')
-  }
-
   if (response.status === 401) {
-    console.log('Access token invalid, clearing access token')
-    await TESLA.delete('access-token')
-
-    try {
-      await accessTokenFromRefreshToken()
-    } catch (e) {
-      console.log('Cannot get access token, trying again.')
-    }
+    throw 'Access Token invalid'
   }
 
   if (allowFailure || response.status === 200) {
     return response
   } else {
-    throw 'Invalid response: ' + (await response.text())
+    throw `Invalid response from ${fullUrl}: ` + (await response.text())
   }
 }

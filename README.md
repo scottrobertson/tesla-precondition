@@ -24,8 +24,6 @@ cp wrangler.toml.example wrangler.toml
 
 - Head over to [Cloudflare](https://dash.cloudflare.com/) and click on Workers
 - Add your `account_id` from Cloudflare Workers into `wrangler.toml`
-- On Cloudflare, click "KV", and add a namespace called `TESLA`
-- Copy that namespace ID into `wrangler.toml` into the `id` field under `kv_namespaces`
 - Publish to Cloudflare:
 
 ```bash
@@ -33,31 +31,33 @@ wrangler login # You only need to do this once
 wrangler publish
 ```
 
-- Make note of the URL it gives you at the end of this. You will need it later.
-
-Next, you need to configure your Tesla login details over in the Cloudflare Dashboard.
-
-- In Cloudflare Workers, click your worker (that was published in the step above)
-- Click "Settings"
-- Click "Edit Variables" under "Environment Variables"
-- Add `TESLA_EMAIL` and `TESLA_PASSWORD` and `VIN`
-- Add a random string to `TOKEN` - this will be used to protect your API endpoint from random people using it.
-
-This should now be setup. You can test that it's all working by going to the URL given previously, appended with `?token=YOUR_TOKEN`.
+> Make note of the URL it gives you at the end of this. You will need it later.
 
 By default, the script will wake up your Tesla and turn climate on. You can also specify the temperature (in Celsius) by adding a `temp` query argument and turn the seats on with `seats`.
 
 The page may take a while to load, as it waits for your Tesla to wake up.
 
-## Query params
+## Usage
 
-| name  | required? | description                                                      |
-| ----- | --------- | ---------------------------------------------------------------- |
-| token | yes       | The unique token you set in Cloudflare                           |
-| temp  | no        | Desired temperature in Celsius                                   |
-| seats | no        | Comma-separated heat levels (0-3) for each seat. See below       |
+To use this endpoint, you need to generate a Tesla Access Token. You can do this using one of the following apps:
 
-#### Seat Numbers
+- TODO: iOS App
+- TODO: Android App
+
+One you have one of those tokens, you can pass it to the API endpoint using query params below.
+
+### Query params
+
+To control the API endpoint, you can use the following query params
+
+| name         | required? | description                                                |
+| ------------ | --------- | ---------------------------------------------------------- |
+| vin          | yes       | The VIN of the car you want to control                     |
+| access_token | yes       | Your Tesla Access Token                                    |
+| temp         | no        | Desired temperature in Celsius                             |
+| seats        | no        | Comma-separated heat levels (0-3) for each seat. See below |
+
+### Seat Numbers
 
 ```
 0 Driver
@@ -75,18 +75,19 @@ An example to turn on all seats to max: `?seats=3,3,3,0,3,3`
 The bare minimum. Just turn on climate.
 
 ```
-https://tesla-precondition.your-subdomain.workers.dev?token=YOUR_TOKEN
+https://tesla.your-subdomain.workers.dev?access_token=YOUR_ACCESS_TOKEN
 ```
 
 Specify a temperature and turn on the two front seats (driver at level 3, passenger at level 1)
 
 ```
-https://tesla-precondition.your-subdomain.workers.dev?token=YOUR_TOKEN&temp=20&seats=3,1
+https://tesla.your-subdomain.workers.dev?access_token=YOUR_ACCESS_TOKEN&temp=20&seats=3,1
 ```
 
 ## Setup iOS Shortcut
 
+- Install and Setup "AUth for Tesla" app.
 - Open Shortcuts
 - Add a Shortcut
 - Add an action of "Get Contents Of URL"
-- Add your URL from above, including appending your token: `?token=YOUR_TOKEN`
+- Add your URL from above, including appending your token: `?access_token=YOUR_ACCESS_TOKEN` along with any other params you want.
