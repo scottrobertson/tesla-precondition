@@ -32,7 +32,7 @@ async function handleRequest(request) {
           await setSeatHeater(accessToken, vehicleID, seatNumber, seatLevel)
         }),
       )
-      successMessage += ', and the seats have been turned on'
+      successMessage += ', and the seats have been set.'
     }
 
     return jsonResponse(successMessage)
