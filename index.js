@@ -7,10 +7,10 @@ addEventListener('fetch', event => {
  * @param {Request} request
  */
 async function handleRequest(request) {
-  const accessToken = request.headers.get('X-TESLA_access_token')
-  const vin = request.headers.get('X-TESLA_vin')
-  const temperature = request.headers.get('X-TESLA_temp')
-  const seats = request.headers.get('X-TESLA_seats')
+  const accessToken = request.headers.get('X-Tesla-access_token')
+  const vin = request.headers.get('X-Tesla-vin')
+  const temperature = request.headers.get('X-Tesla-temp')
+  const seats = request.headers.get('X-Tesla-seats')
 
   let successMessage = 'Car is preconditioning'
 

@@ -41,10 +41,10 @@ The page may take a while to load, as it waits for your Tesla to wake up.
 
 To use this endpoint, you need to generate a Tesla Access Token. You can do this using one of the following apps:
 
-- TODO: iOS App
-- TODO: Android App
+- iOS: Auth for Tesla
+- Android: Tesla Tokens
 
-One you have one of those tokens, you can pass it to the API endpoint using query params below.
+One you have one of the token, you can pass it to the API endpoint using query params below.
 
 ### Headers
 
@@ -52,10 +52,10 @@ To control the API endpoint, you can use the following headers
 
 | name                 | required? | description                                                |
 | -------------------- | --------- | ---------------------------------------------------------- |
-| X-TESLA_vin          | yes       | The VIN of the car you want to control                     |
-| X-TESLA_access_token | yes       | Your Tesla Access Token                                    |
-| X-TESLA_temp         | no        | Desired temperature in Celsius                             |
-| X-TESLA_seats        | no        | Comma-separated heat levels (0-3) for each seat. See below |
+| X-Tesla-vin          | yes       | The VIN of the car you want to control                     |
+| X-Tesla-access_token | yes       | Your Tesla Access Token                                    |
+| X-Tesla-temp         | no        | Desired temperature in Celsius                             |
+| X-Tesla-seats        | no        | Comma-separated heat levels (0-3) for each seat. See below |
 
 ### Seat Numbers
 
@@ -68,12 +68,17 @@ To control the API endpoint, you can use the following headers
 5 Rear right
 ```
 
-An example to turn on all seats to max: `X-TESLA_seats=3,3,3,0,3,3`
+An example to turn on all seats to max: `X-Tesla-seats=3,3,3,0,3,3`
 
 ## Setup iOS Shortcut
 
-- Install and Setup "AUth for Tesla" app.
+- Install and Setup "Auth for Tesla" app.
 - Open Shortcuts
 - Add a Shortcut
+- Add an action of "Get Access Token" provided by the Auth for Tesla app.
 - Add an action of "Get Contents Of URL"
-- Add your URL from above, including appending your token: `?access_token=YOUR_ACCESS_TOKEN` along with any other params you want.
+  - Add your URL from above
+  - Add the required + optional headers from above.
+  - For the X-Tesla-access_token header, you can tell it to use the "token" variable from the "Get Access Token" step above.
+- Optional: Add an action of "Get Dictionary From" and use the "Contents of URL" as the value
+- Optional: Add an action of "Show notification" and use the response from the dictonary step as the body
