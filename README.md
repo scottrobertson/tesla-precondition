@@ -82,3 +82,6 @@ An example to turn on all seats to max: `X-Tesla-seats=3,3,3,0,3,3`
   - For the X-Tesla-access_token header, you can tell it to use the "token" variable from the "Get Access Token" step above.
 - Optional: Add an action of "Get Dictionary From" and use the "Contents of URL" as the value
 - Optional: Add an action of "Show notification" and use the response from the dictonary step as the body
+
+![image](https://user-images.githubusercontent.com/68361/140664905-83b004b0-2a08-4359-9220-2bed8b751e86.png)
+
