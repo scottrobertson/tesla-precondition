@@ -48,6 +48,10 @@ async function jsonResponse(message) {
 }
 
 async function getVehicleIDFromVin(accessToken, vin) {
+  if (vin === null) {
+    throw 'No X-Tesla-vin header provided'
+  }
+
   console.log('Getting vehicle list')
 
   const vehiclesResponse = await teslaRequest(accessToken, null, 'GET', '/vehicles')
