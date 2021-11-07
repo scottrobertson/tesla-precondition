@@ -7,11 +7,11 @@ addEventListener('fetch', event => {
  * @param {Request} request
  */
 async function handleRequest(request) {
-  const { searchParams } = new URL(request.url)
-  const accessToken = searchParams.get('access_token')
-  const vin = searchParams.get('vin')
-  const temperature = searchParams.get('temp')
-  const seats = searchParams.get('seats')
+  const accessToken = request.headers.get('X-TESLA_access_token')
+  const vin = request.headers.get('X-TESLA_vin')
+  const temperature = request.headers.get('X-TESLA_temp')
+  const seats = request.headers.get('X-TESLA_seats')
+
   let successMessage = 'Car is preconditioning'
 
   try {

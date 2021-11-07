@@ -33,7 +33,7 @@ wrangler publish
 
 > Make note of the URL it gives you at the end of this. You will need it later.
 
-By default, the script will wake up your Tesla and turn climate on. You can also specify the temperature (in Celsius) by adding a `temp` query argument and turn the seats on with `seats`.
+By default, the script will wake up your Tesla and turn climate on. You can also specify the temperature (in Celsius) and turn on the seat heaters using headers (see below).
 
 The page may take a while to load, as it waits for your Tesla to wake up.
 
@@ -46,16 +46,16 @@ To use this endpoint, you need to generate a Tesla Access Token. You can do this
 
 One you have one of those tokens, you can pass it to the API endpoint using query params below.
 
-### Query params
+### Headers
 
-To control the API endpoint, you can use the following query params
+To control the API endpoint, you can use the following headers
 
-| name         | required? | description                                                |
-| ------------ | --------- | ---------------------------------------------------------- |
-| vin          | yes       | The VIN of the car you want to control                     |
-| access_token | yes       | Your Tesla Access Token                                    |
-| temp         | no        | Desired temperature in Celsius                             |
-| seats        | no        | Comma-separated heat levels (0-3) for each seat. See below |
+| name                 | required? | description                                                |
+| -------------------- | --------- | ---------------------------------------------------------- |
+| X-TESLA_vin          | yes       | The VIN of the car you want to control                     |
+| X-TESLA_access_token | yes       | Your Tesla Access Token                                    |
+| X-TESLA_temp         | no        | Desired temperature in Celsius                             |
+| X-TESLA_seats        | no        | Comma-separated heat levels (0-3) for each seat. See below |
 
 ### Seat Numbers
 
@@ -68,21 +68,7 @@ To control the API endpoint, you can use the following query params
 5 Rear right
 ```
 
-An example to turn on all seats to max: `?seats=3,3,3,0,3,3`
-
-## Examples
-
-The bare minimum. Just turn on climate.
-
-```
-https://tesla.your-subdomain.workers.dev?access_token=YOUR_ACCESS_TOKEN
-```
-
-Specify a temperature and turn on the two front seats (driver at level 3, passenger at level 1)
-
-```
-https://tesla.your-subdomain.workers.dev?access_token=YOUR_ACCESS_TOKEN&temp=20&seats=3,1
-```
+An example to turn on all seats to max: `X-TESLA_seats=3,3,3,0,3,3`
 
 ## Setup iOS Shortcut
 
