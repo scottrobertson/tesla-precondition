@@ -24,8 +24,6 @@ cp wrangler.toml.example wrangler.toml
 
 - Head over to [Cloudflare](https://dash.cloudflare.com/) and click on Workers
 - Add your `account_id` from Cloudflare Workers into `wrangler.toml`
-- On Cloudflare, click "KV", and add a namespace called `TESLA`
-- Copy that namespace ID into `wrangler.toml` into the `id` field under `kv_namespaces`
 - Publish to Cloudflare:
 
 ```bash
@@ -33,31 +31,33 @@ wrangler login # You only need to do this once
 wrangler publish
 ```
 
-- Make note of the URL it gives you at the end of this. You will need it later.
+> Make note of the URL it gives you at the end of this. You will need it later.
 
-Next, you need to configure your Tesla login details over in the Cloudflare Dashboard.
-
-- In Cloudflare Workers, click your worker (that was published in the step above)
-- Click "Settings"
-- Click "Edit Variables" under "Environment Variables"
-- Add `TESLA_EMAIL` and `TESLA_PASSWORD` and `VIN`
-- Add a random string to `TOKEN` - this will be used to protect your API endpoint from random people using it.
-
-This should now be setup. You can test that it's all working by going to the URL given previously, appended with `?token=YOUR_TOKEN`.
-
-By default, the script will wake up your Tesla and turn climate on. You can also specify the temperature (in Celsius) by adding a `temp` query argument and turn the seats on with `seats`.
+By default, the script will wake up your Tesla and turn climate on. You can also specify the temperature (in Celsius) and turn on the seat heaters using headers (see below).
 
 The page may take a while to load, as it waits for your Tesla to wake up.
 
-## Query params
+## Usage
 
-| name  | required? | description                                                      |
-| ----- | --------- | ---------------------------------------------------------------- |
-| token | yes       | The unique token you set in Cloudflare                           |
-| temp  | no        | Desired temperature in Celsius                                   |
-| seats | no        | Comma-separated heat levels (0-3) for each seat. See below       |
+To use this endpoint, you need to generate a Tesla Access Token. You can do this using one of the following apps:
 
-#### Seat Numbers
+- iOS: Auth for Tesla
+- Android: Tesla Tokens
+
+One you have one of the token, you can pass it to the API endpoint using query params below.
+
+### Headers
+
+To control the API endpoint, you can use the following headers
+
+| name                 | required? | description                                                |
+| -------------------- | --------- | ---------------------------------------------------------- |
+| X-Tesla-vin          | yes       | The VIN of the car you want to control                     |
+| X-Tesla-access_token | yes       | Your Tesla Access Token                                    |
+| X-Tesla-temp         | no        | Desired temperature in Celsius                             |
+| X-Tesla-seats        | no        | Comma-separated heat levels (0-3) for each seat. See below |
+
+### Seat Numbers
 
 ```
 0 Driver
@@ -68,25 +68,20 @@ The page may take a while to load, as it waits for your Tesla to wake up.
 5 Rear right
 ```
 
-An example to turn on all seats to max: `?seats=3,3,3,0,3,3`
-
-## Examples
-
-The bare minimum. Just turn on climate.
-
-```
-https://tesla-precondition.your-subdomain.workers.dev?token=YOUR_TOKEN
-```
-
-Specify a temperature and turn on the two front seats (driver at level 3, passenger at level 1)
-
-```
-https://tesla-precondition.your-subdomain.workers.dev?token=YOUR_TOKEN&temp=20&seats=3,1
-```
+An example to turn on all seats to max: `X-Tesla-seats=3,3,3,0,3,3`
 
 ## Setup iOS Shortcut
 
+- Install and Setup "Auth for Tesla" app.
 - Open Shortcuts
 - Add a Shortcut
+- Add an action of "Get Access Token" provided by the Auth for Tesla app.
 - Add an action of "Get Contents Of URL"
-- Add your URL from above, including appending your token: `?token=YOUR_TOKEN`
+  - Add your URL from above
+  - Add the required + optional headers from above.
+  - For the X-Tesla-access_token header, you can tell it to use the "token" variable from the "Get Access Token" step above.
+- Optional: Add an action of "Get Dictionary From" and use the "Contents of URL" as the value
+- Optional: Add an action of "Show notification" and use the response from the dictonary step as the body
+
+![image](https://user-images.githubusercontent.com/68361/140664905-83b004b0-2a08-4359-9220-2bed8b751e86.png)
+
