@@ -1,4 +1,4 @@
-addEventListener('fetch', event => {
+addEventListener('fetch', (event) => {
   event.respondWith(handleRequest(event.request))
 })
 
@@ -15,9 +15,14 @@ async function handleRequest(request) {
   let successMessage = 'Car is preconditioning'
 
   try {
-    const vehicleID = await getVehicleIDFromVin(accessToken, vin)
+    const { vehicleID, vehicleState } = await getVehicleIDAndStatusFromVin(accessToken, vin)
 
-    await wakeVehicle(accessToken, vehicleID)
+    if (vehicleState !== 'online') {
+      await wakeVehicle(accessToken, vehicleID)
+    } else {
+      console.log('Car is already awake, skipping wake_up')
+    }
+
     await startHVAC(accessToken, vehicleID)
 
     if (temperature) {
@@ -47,7 +52,7 @@ async function jsonResponse(message) {
   })
 }
 
-async function getVehicleIDFromVin(accessToken, vin) {
+async function getVehicleIDAndStatusFromVin(accessToken, vin) {
   if (vin === null) {
     throw 'No X-Tesla-vin header provided'
   }
@@ -56,10 +61,13 @@ async function getVehicleIDFromVin(accessToken, vin) {
 
   const vehiclesResponse = await teslaRequest(accessToken, null, 'GET', '/vehicles')
   const vehiclesJSON = await vehiclesResponse.json()
-  const vehicleID = vehiclesJSON.response.find(vehicle => vehicle.vin === vin).id_s
+  const vehicle = vehiclesJSON.response.find((vehicle) => vehicle.vin === vin)
 
-  if (vehicleID) {
-    return vehicleID
+  if (vehicle) {
+    return {
+      vehicleID: vehicle.id_s,
+      vehicleState: vehicle.state,
+    }
   } else {
     throw 'Cannot find vehicle with that VIN'
   }
@@ -98,39 +106,7 @@ async function wakeVehicle(accessToken, vehicleID) {
   console.log('Waking car')
   const wakeResponse = await teslaRequest(accessToken, vehicleID, 'POST', '/wake_up')
   const wakeResponseJSON = await wakeResponse.json()
-
-  let vehicleAwake = false
-
-  if (wakeResponse.status == 200 && wakeResponseJSON.response.state === 'online') {
-    console.log('Car already awake, skipping polling')
-    vehicleAwake = true
-  }
-
-  let loopCount = 1
-
-  while (vehicleAwake === false) {
-    console.log('Checking for awake. Try: ' + loopCount)
-
-    if (loopCount > 60) {
-      throw 'Timed out waiting for car to wake up (60s).'
-    }
-
-    const stateResponse = await teslaRequest(accessToken, vehicleID, 'GET', '/vehicle_data', null, true)
-    const stateResponseJSON = await stateResponse.json()
-
-    const currentState = stateResponseJSON.response ? stateResponseJSON.response.state : 'unknown'
-    console.log('Current state: ' + currentState)
-
-    if (wakeResponse.status === 200 && currentState === 'online') {
-      // Wait a bit more, as sometime there are race conditions with calling a command just after waking the car.
-      await new Promise(r => setTimeout(r, 1000))
-      vehicleAwake = true
-    } else {
-      console.log('Car is sleeping, trying again in 1s')
-      loopCount += 1
-      await new Promise(r => setTimeout(r, 1000))
-    }
-  }
+  console.log(`Vehicle state: ${wakeResponseJSON.response.state}`)
 }
 
 async function teslaRequest(accessToken, vehicleID, method, url, body = null) {
@@ -160,9 +136,26 @@ async function teslaRequest(accessToken, vehicleID, method, url, body = null) {
     body: body,
   })
 
-  const response = await fetch(request)
-
+  let response = await fetch(request)
   console.log('Response status:', response.status)
+
+  let retryCount = 1
+  let retryMs = 1000
+  let retryLimit = 60
+
+  while (response.status === 408) {
+    if (retryCount > retryLimit) {
+      throw `Timed out waiting for car to wake up (${retryMs}ms).`
+    }
+
+    console.log(`[Attempt: ${retryCount}/${retryLimit}] Car is sleeping, trying again in ${retryMs}ms`)
+    await new Promise((r) => setTimeout(r, retryMs))
+
+    response = await fetch(request)
+    console.log('Response status:', response.status)
+
+    retryCount += 1
+  }
 
   if (response.status === 401) {
     throw 'Access Token invalid'
