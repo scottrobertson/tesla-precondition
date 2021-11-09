@@ -15,9 +15,14 @@ async function handleRequest(request) {
   let successMessage = 'Car is preconditioning'
 
   try {
-    const vehicleID = await getVehicleIDFromVin(accessToken, vin)
+    const { vehicleID, vehicleState } = await getVehicleIDAndStatusFromVin(accessToken, vin)
 
-    await wakeVehicle(accessToken, vehicleID)
+    if (vehicleState !== 'online') {
+      await wakeVehicle(accessToken, vehicleID)
+    } else {
+      console.log('Car is already awake, skipping wake_up')
+    }
+
     await startHVAC(accessToken, vehicleID)
 
     if (temperature) {
@@ -47,7 +52,7 @@ async function jsonResponse(message) {
   })
 }
 
-async function getVehicleIDFromVin(accessToken, vin) {
+async function getVehicleIDAndStatusFromVin(accessToken, vin) {
   if (vin === null) {
     throw 'No X-Tesla-vin header provided'
   }
@@ -56,10 +61,13 @@ async function getVehicleIDFromVin(accessToken, vin) {
 
   const vehiclesResponse = await teslaRequest(accessToken, null, 'GET', '/vehicles')
   const vehiclesJSON = await vehiclesResponse.json()
-  const vehicleID = vehiclesJSON.response.find((vehicle) => vehicle.vin === vin).id_s
+  const vehicle = vehiclesJSON.response.find((vehicle) => vehicle.vin === vin)
 
-  if (vehicleID) {
-    return vehicleID
+  if (vehicle) {
+    return {
+      vehicleID: vehicle.id_s,
+      vehicleState: vehicle.state,
+    }
   } else {
     throw 'Cannot find vehicle with that VIN'
   }
