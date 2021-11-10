@@ -2,13 +2,26 @@
 
 An API endpoint to preheat your Tesla. You can create a shortcut on your mobile device (such as iOS Shortcuts, or Tasker) to call this endpoint to precondition/preheat your car.
 
+You have 2 options to use this:
+
+- Use our hosted endpoint
+- Host it yourself (Cloudflare Workers)
+
+See the options below.
+
+## Hosted
+
+I have a Cloudflare Workers endpoint that anyone can use with their car. No data or access tokens are stored, and it cannot perform actions to your card on it's own. You pass in your access token to every request, and it expires after a few hours.
+
+To use this, simply use the API endpoint: `https://tesla.scottrobertson.workers.dev` and follow the "Usage" steps below.
+
+## Self Hosted
+
 This is designed to work with Cloudflare Workers, but I am sure it could work elsewhere with some modifications. Feel free to submit a PR.
 
-## Deploy to Cloudflare Workers
+### Deploy to Cloudflare Workers
 
-Note: this will require you supplying your Tesla login details in the Cloudflare dashboard. If you are not comfortable with this, feel free to PR in support for tokens.
-
-Docs need improving, but here they are in their most raw form:
+You can host this endpoint super easily on Cloudflare Workers.
 
 - Install `wrangler` CLI:
 
@@ -27,7 +40,6 @@ cp wrangler.toml.example wrangler.toml
 - Publish to Cloudflare:
 
 ```bash
-wrangler login # You only need to do this once
 wrangler publish
 ```
 
@@ -70,7 +82,7 @@ To control the API endpoint, you can use the following headers
 
 An example to turn on all seats to max: `X-Tesla-seats=3,3,3,0,3,3`
 
-## Setup iOS Shortcut
+### Example iOS Shortcut
 
 - Install and Setup "Auth for Tesla" app.
 - Open Shortcuts
@@ -84,4 +96,3 @@ An example to turn on all seats to max: `X-Tesla-seats=3,3,3,0,3,3`
 - Optional: Add an action of "Show notification" and use the response from the dictonary step as the body
 
 ![image](https://user-images.githubusercontent.com/68361/140664905-83b004b0-2a08-4359-9220-2bed8b751e86.png)
-
