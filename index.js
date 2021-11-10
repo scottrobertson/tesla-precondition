@@ -15,23 +15,28 @@ async function handleRequest(request) {
   let successMessage = 'Car is preconditioning'
 
   try {
+    console.log('Getting vehicle id and state')
     const { vehicleID, vehicleState } = await getVehicleIDAndStatusFromVin(accessToken, vin)
 
     if (vehicleState !== 'online') {
+      console.log('Car is asleep, waking it up')
       await wakeVehicle(accessToken, vehicleID)
     } else {
       console.log('Car is already awake, skipping wake_up')
     }
 
+    console.log('Starting HVAC')
     await startHVAC(accessToken, vehicleID)
 
     if (temperature) {
+      console.log('Setting temprature')
       await setTemperature(accessToken, vehicleID, temperature)
       successMessage += ` to ${temperature}C`
     }
 
     // Enable seat heaters
     if (seats) {
+      console.log('Setting seat levels')
       await Promise.all(
         seats.split(',').map(async (seatLevel, seatNumber) => {
           await setSeatHeater(accessToken, vehicleID, seatNumber, seatLevel)
@@ -57,8 +62,6 @@ async function getVehicleIDAndStatusFromVin(accessToken, vin) {
     throw 'No X-Tesla-vin header provided'
   }
 
-  console.log('Getting vehicle list')
-
   const vehiclesResponse = await teslaRequest(accessToken, null, 'GET', '/vehicles')
   const vehiclesJSON = await vehiclesResponse.json()
   const vehicle = vehiclesJSON.response.find((vehicle) => vehicle.vin === vin)
@@ -74,39 +77,26 @@ async function getVehicleIDAndStatusFromVin(accessToken, vin) {
 }
 
 async function startHVAC(accessToken, vehicleID) {
-  console.log('Starting HVAC')
-  const hvacResponse = await teslaRequest(accessToken, vehicleID, 'POST', '/command/auto_conditioning_start')
-
-  console.log('HVAC command response:' + (await hvacResponse.text()))
-  return hvacResponse
+  return await teslaRequest(accessToken, vehicleID, 'POST', '/command/auto_conditioning_start')
 }
 
 async function setTemperature(accessToken, vehicleID, temperature) {
-  console.log('Setting Temperature')
-  const setTemps = await teslaRequest(accessToken, vehicleID, 'POST', '/command/set_temps', {
+  return await teslaRequest(accessToken, vehicleID, 'POST', '/command/set_temps', {
     driver_temp: temperature,
     passenger_temp: temperature,
   })
-
-  console.log('Set temperature command response:' + (await setTemps.text()))
-  return setTemps
 }
 
 async function setSeatHeater(accessToken, vehicleID, seatNumber, seatLevel) {
-  const setSeatHeater = await teslaRequest(accessToken, vehicleID, 'POST', '/command/remote_seat_heater_request', {
+  return await teslaRequest(accessToken, vehicleID, 'POST', '/command/remote_seat_heater_request', {
     heater: seatNumber,
     level: seatLevel,
   })
-
-  console.log('Set seat heater command response:' + (await setSeatHeater.text()))
-  return setSeatHeater
 }
 
 async function wakeVehicle(accessToken, vehicleID) {
-  console.log('Waking car')
   const wakeResponse = await teslaRequest(accessToken, vehicleID, 'POST', '/wake_up')
-  const wakeResponseJSON = await wakeResponse.json()
-  console.log(`Vehicle state: ${wakeResponseJSON.response.state}`)
+  return await wakeResponse.json()
 }
 
 async function teslaRequest(accessToken, vehicleID, method, url, body = null) {
@@ -129,15 +119,13 @@ async function teslaRequest(accessToken, vehicleID, method, url, body = null) {
     fullUrl = 'https://owner-api.teslamotors.com/api/1/vehicles/' + vehicleID + url
   }
 
-  console.log('Calling: ' + method + ' ' + fullUrl + ' with body: ' + body)
   const request = new Request(fullUrl, {
     method: method,
     headers: headers,
     body: body,
   })
 
-  let response = await fetch(request)
-  console.log('Response status:', response.status)
+  let response = await performRequest(request, body)
 
   let retryCount = 1
   let retryMs = 1000
@@ -148,11 +136,10 @@ async function teslaRequest(accessToken, vehicleID, method, url, body = null) {
       throw `Timed out waiting for car to wake up (${retryMs}ms).`
     }
 
-    console.log(`[Attempt: ${retryCount}/${retryLimit}] Car is sleeping, trying again in ${retryMs}ms`)
+    console.warn(`[Attempt: ${retryCount}/${retryLimit}] Car is sleeping, trying again in ${retryMs}ms`)
     await new Promise((r) => setTimeout(r, retryMs))
 
-    response = await fetch(request)
-    console.log('Response status:', response.status)
+    response = await performRequest(request, body)
 
     retryCount += 1
   }
@@ -166,4 +153,17 @@ async function teslaRequest(accessToken, vehicleID, method, url, body = null) {
   } else {
     throw `Invalid response from ${fullUrl}: [${response.status}] ` + (await response.text())
   }
+}
+
+async function performRequest(request, body) {
+  const response = await fetch(request)
+  const response_log = `[${request.method}] ${request.url}: ${body} => ${response.status}`
+
+  if (response.status === 200) {
+    console.log(response_log)
+  } else {
+    console.error(response_log)
+  }
+
+  return response
 }
